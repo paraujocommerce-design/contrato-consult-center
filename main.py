@@ -4,7 +4,7 @@ import io
 import re
 from datetime import datetime
 
-# --- FUNÇÕES DE VALIDAÇÃO (PRÁTICAS E RÁPIDAS) ---
+# --- FUNÇÕES DE VALIDAÇÃO ---
 def validar_cpf(cpf):
     cpf = re.sub(r'[^0-9]', '', str(cpf))
     if len(cpf) != 11 or cpf == cpf[0] * 11: return False
@@ -26,57 +26,98 @@ def validar_cnpj(cnpj):
     return True
 
 # --- INTERFACE ---
-st.set_page_config(page_title="Consult Center - Emissor Seguro", layout="wide")
-st.title("📄 Emissor de Contrato com Validação")
+st.set_page_config(page_title="Consult Center - Sistema Oficial", layout="wide")
+st.title("📄 Emissor de Contrato Profissional")
 
-with st.form("form_seguro"):
+with st.form("form_final"):
+    # Organização em Colunas para facilitar o preenchimento
     c1, c2, c3 = st.columns(3)
+    
     with c1:
-        st.subheader("🏢 Empresa")
+        st.subheader("🏢 Identificação")
         razao = st.text_input("Razão Social")
         fantasia = st.text_input("Nome Fantasia")
         cnpj_input = st.text_input("CNPJ (apenas números)")
-        rep = st.text_input("Representante")
+        rep = st.text_input("Representante (Cód + Nome)")
+        id_assoc = st.text_input("Nº Associado")
+
     with c2:
+        st.subheader("📍 Localização")
+        endereco = st.text_input("Endereço")
+        bairro = st.text_input("Bairro")
+        cidade = st.text_input("Cidade")
+        cep = st.text_input("CEP")
+        ref = st.text_input("Ponto de Referência")
+
+    with c3:
         st.subheader("📞 Contatos")
         email = st.text_input("E-mail Financeiro")
         ddd = st.text_input("DDD", max_chars=2)
         tel = st.text_input("Telefone Fixo")
-        cel = st.text_input("Celular 01")
-        cep = st.text_input("CEP (apenas números)")
-    with c3:
-        st.subheader("💰 Plano e Garantia")
-        valor = st.text_input("Valor Mensal (R$)")
-        fiador = st.text_input("Nome do Fiador")
-        cpf_fiador = st.text_input("CPF do Fiador (apenas números)")
-        q01 = st.text_input("Qtd Opção 01", "0")
+        cel1 = st.text_input("Celular 01")
+        cel2 = st.text_input("Celular 02")
 
+    st.divider()
+    
+    # Seção de Serviços e Valores
+    st.subheader("📊 Quantitativos e Financeiro")
+    q1, q2, q3, q4 = st.columns(4)
+    with q1:
+        q01 = st.number_input("Qtd: Consulta SERASA (Op 01)", min_value=0, step=1)
+    with q2:
+        q13 = st.number_input("Qtd: Negativação (Op 13)", min_value=0, step=1)
+    with q3:
+        q05 = st.number_input("Qtd: Localizador (Op 05)", min_value=0, step=1)
+    with q4:
+        valor = st.text_input("Valor Mensal (R$)", placeholder="00,00")
+
+    st.subheader("➕ Outros Serviços")
+    o1, o2 = st.columns(2)
+    with o1:
+        op_nome = st.text_input("Nome da Opção (Ex: Opção 16 - Veicular)")
+    with o2:
+        qout = st.number_input("Quantidade (Outros)", min_value=0, step=1)
+
+    st.divider()
+    st.subheader("🛡️ Garantia")
+    g1, g2, g3 = st.columns(3)
+    with g1:
+        fiador = st.text_input("Nome do Fiador")
+    with g2:
+        cpf_fiador = st.text_input("CPF do Fiador (apenas números)")
+    with g3:
+        resp_pag = st.text_input("Responsável Pagamento")
+
+    # BOTÃO DE AÇÃO
     if st.form_submit_button("VALIDAR E GERAR CONTRATO"):
         erros = []
-        
-        # Validações Críticas
-        if not validar_cnpj(cnpj_input): erros.append("❌ CNPJ da Empresa inválido.")
+        if not validar_cnpj(cnpj_input): erros.append("❌ CNPJ inválido.")
         if not validar_cpf(cpf_fiador): erros.append("❌ CPF do Fiador inválido.")
-        if len(re.sub(r'[^0-9]', '', cep)) != 8: erros.append("❌ CEP deve ter 8 dígitos.")
-        if "@" not in email or "." not in email: erros.append("❌ Formato de E-mail inválido.")
-        if len(ddd) != 2: erros.append("❌ DDD deve ter 2 dígitos.")
-
+        if not email or "@" not in email: erros.append("❌ Verifique o E-mail.")
+        
         if erros:
             for erro in erros: st.error(erro)
         else:
-            # Se não houver erros, gera o documento
             try:
+                # O arquivo deve estar no GitHub com este nome exato
                 doc = Document("CONTRATO.docx")
                 data_atual = datetime.now().strftime("%d/%m/%Y")
                 
+                # Mapa de substituição completo
                 dados = {
                     "{{RAZAO}}": razao, "{{FANTASIA}}": fantasia, "{{CNPJ}}": cnpj_input,
-                    "{{REP}}": rep, "{{D1}}": ddd, "{{TEL}}": tel, "{{CEL1}}": cel, 
-                    "{{EMAIL}}": email, "{{VALOR}}": valor, "{{Q01}}": q01, 
-                    "{{DATA}}": data_atual, "{{FIADOR}}": fiador, "{{CPF_FIADOR}}": cpf_fiador,
-                    "{{CEP}}": cep, "{{D2}}": ddd, "{{D3}}": ddd
+                    "{{REP}}": rep, "{{ID_ASSOC}}": id_assoc, "{{ENDERECO}}": endereco,
+                    "{{BAIRRO}}": bairro, "{{CIDADE}}": cidade, "{{CEP}}": cep, "{{REF}}": ref,
+                    "{{EMAIL}}": email, "{{D1}}": ddd, "{{D2}}": ddd, "{{D3}}": ddd,
+                    "{{TEL}}": tel, "{{CEL1}}": cel1, "{{CEL2}}": cel2,
+                    "{{VALOR}}": valor, "{{FIADOR}}": fiador, "{{CPF_FIADOR}}": cpf_fiador,
+                    "{{RESP_PAG}}": resp_pag, 
+                    "{{Q01}}": str(q01), "{{Q13}}": str(q13), "{{Q05}}": str(q05),
+                    "{{OPCAO_NOME}}": op_nome, "{{QOUT}}": str(qout),
+                    "{{DATA}}": data_atual
                 }
 
+                # Executa a substituição em todas as tabelas (onde estão os campos )
                 for tabela in doc.tables:
                     for linha in tabela.rows:
                         for celula in linha.cells:
@@ -86,7 +127,13 @@ with st.form("form_seguro"):
 
                 output = io.BytesIO()
                 doc.save(output)
-                st.success(f"✅ Dados validados! Contrato de {razao} pronto.")
-                st.download_button("📥 Baixar Agora", output.getvalue(), f"Contrato_{razao}.docx")
+                
+                st.success(f"✅ Sucesso! Contrato de {razao} gerado com data de {data_atual}.")
+                st.download_button(
+                    label="📥 Baixar Contrato Agora",
+                    data=output.getvalue(),
+                    file_name=f"Contrato_{razao}.docx",
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                )
             except Exception as e:
-                st.error(f"Erro ao ler o arquivo CONTRATO.docx: {e}")
+                st.error(f"Erro ao processar o arquivo: {e}")
