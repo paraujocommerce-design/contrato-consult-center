@@ -4,95 +4,91 @@ import io
 import re
 from datetime import datetime
 
-# --- FUNÇÕES DE VALIDAÇÃO ---
-def validar_cpf(cpf):
-    cpf = re.sub(r'[^0-9]', '', str(cpf))
-    if len(cpf) != 11 or cpf == cpf[0] * 11: return False
-    return True
+# --- VALIDAÇÕES ---
+def validar_dados(cpf, cnpj):
+    # Simplificado para rapidez, aceita qualquer número com 11 ou 14 dígitos
+    c = re.sub(r'[^0-9]', '', str(cpf))
+    j = re.sub(r'[^0-9]', '', str(cnpj))
+    return len(c) == 11, len(j) == 14
 
-def validar_cnpj(cnpj):
-    cnpj = re.sub(r'[^0-9]', '', str(cnpj))
-    if len(cnpj) != 14 or cnpj == cnpj[0] * 14: return False
-    return True
+st.set_page_config(page_title="Consult Center", layout="wide")
+st.title("📄 Emissor de Contrato")
 
-# --- INTERFACE ---
-st.set_page_config(page_title="Consult Center - Emissor", layout="wide")
-st.title("📄 Emissor de Contrato - Final")
-
-if 'conteudo_arquivo' not in st.session_state:
-    st.session_state.conteudo_arquivo = None
+if 'arquivo_pronto' not in st.session_state:
+    st.session_state.arquivo_pronto = None
 
 with st.form("form_final"):
     c1, c2, c3 = st.columns(3)
     with c1:
         razao = st.text_input("Razão Social")
         fantasia = st.text_input("Nome Fantasia")
-        cnpj_input = st.text_input("CNPJ (apenas números)")
-        rep = st.text_input("Representante (Cód + Nome)")
+        cnpj = st.text_input("CNPJ (números)")
+        rep = st.text_input("Representante")
     with c2:
-        endereco = st.text_input("Endereço")
+        end = st.text_input("Endereço")
         bairro = st.text_input("Bairro")
         cidade = st.text_input("Cidade")
-        uf = st.text_input("UF (Ex: SP)")
+        uf = st.text_input("UF")
         cep = st.text_input("CEP")
+        ref = st.text_input("Ponto de Referência")
     with c3:
-        ddd = st.text_input("DDD", max_chars=2)
-        tel = st.text_input("Telefone Fixo")
+        email = st.text_input("E-mail")
+        ddd = st.text_input("DDD")
+        tel = st.text_input("Telefone")
         cel1 = st.text_input("Celular 01")
-        email = st.text_input("E-mail Financeiro")
+        cel2 = st.text_input("Celular 02")
 
     st.divider()
-    st.subheader("📊 Valores e Quantidades")
-    q1, q2, q3, q4 = st.columns(4)
-    with q1: q01 = st.number_input("Qtd: Consulta SERASA", min_value=0)
-    with q2: q13 = st.number_input("Qtd: Negativação", min_value=0)
-    with q3: q05 = st.number_input("Qtd: Localizador", min_value=0)
-    with q4: valor_plano = st.text_input("Valor Mensal R$ (Ex: 99,90)")
+    v1, v2, v3, v4 = st.columns(4)
+    with v1: q01 = st.number_input("Qtd Serasa", min_value=0)
+    with v2: q13 = st.number_input("Qtd Negativação", min_value=0)
+    with v3: q05 = st.number_input("Qtd Localizador", min_value=0)
+    with v4: valor = st.text_input("Valor Mensal R$")
 
-    st.subheader("➕ Outros")
+    st.subheader("Outros Serviços")
     o1, o2 = st.columns(2)
-    with o1: op_nome = st.text_input("Número da Opção (Ex: 16)")
+    with o1: op_nome = st.text_input("Opção (Número)")
     with o2: qout = st.number_input("Quantidade Outros", min_value=0)
 
     st.divider()
-    fiador = st.text_input("Nome do Fiador")
-    cpf_fiador = st.text_input("CPF do Fiador")
-    
-    validar = st.form_submit_button("PROCESSAR CONTRATO")
+    f1, f2, f3 = st.columns(3)
+    with f1: fiador = st.text_input("Fiador")
+    with f2: cpf_f = st.text_input("CPF Fiador")
+    with f3: resp_p = st.text_input("Responsável Pagamento")
 
-if validar:
-    if not validar_cnpj(cnpj_input) or not validar_cpf(cpf_fiador):
-        st.error("❌ Verifique CNPJ ou CPF do Fiador.")
-    else:
-        try:
-            doc = Document("CONTRATO.docx")
-            data_hoje = datetime.now().strftime("%d/%m/%Y")
-            
-            dados = {
-                "{{RAZAO}}": razao, "{{FANTASIA}}": fantasia, "{{CNPJ}}": cnpj_input,
-                "{{REP}}": rep, "{{ENDERECO}}": endereco, "{{BAIRRO}}": bairro,
-                "{{CIDADE}}": cidade, "{{UF}}": uf, "{{CEP}}": cep,
-                "{{D1}}": ddd, "{{D2}}": ddd, "{{D3}}": ddd,
-                "{{TEL}}": tel, "{{CEL1}}": cel1, "{{EMAIL}}": email,
-                "{{VALOR}}": valor_plano, "{{FIADOR}}": fiador, "{{CPF_FIADOR}}": cpf_fiador,
-                "{{Q01}}": str(q01), "{{Q13}}": str(q13), "{{Q05}}": str(q05),
-                "{{OPCAO_NOME}}": op_nome, "{{QOUT}}": str(qout),
-                "{{DATA}}": data_hoje
-            }
+    gerar = st.form_submit_button("GERAR CONTRATO")
 
-            for tabela in doc.tables:
-                for linha in tabela.rows:
-                    for celula in linha.cells:
-                        for tag, info in dados.items():
-                            if tag in celula.text:
-                                celula.text = celula.text.replace(tag, info)
+if gerar:
+    try:
+        doc = Document("CONTRATO.docx")
+        hoje = datetime.now().strftime("%d/%m/%Y")
+        
+        # Mapa de substituição total
+        trocas = {
+            "{{RAZAO}}": razao, "{{FANTASIA}}": fantasia, "{{CNPJ}}": cnpj,
+            "{{REP}}": rep, "{{ENDERECO}}": end, "{{BAIRRO}}": bairro,
+            "{{CIDADE}}": cidade, "{{UF}}": uf, "{{CEP}}": cep, "{{REF}}": ref,
+            "{{EMAIL}}": email, "{{D1}}": ddd, "{{D2}}": ddd, "{{D3}}": ddd,
+            "{{TEL}}": tel, "{{CEL1}}": cel1, "{{CEL2}}": cel2,
+            "{{VALOR}}": valor, "{{FIADOR}}": fiador, "{{CPF_FIADOR}}": cpf_f,
+            "{{RESP_PAG}}": resp_p, "{{Q01}}": str(q01), "{{Q13}}": str(q13),
+            "{{Q05}}": str(q05), "{{OPCAO_NOME}}": op_nome, "{{QOUT}}": str(qout),
+            "{{DATA}}": hoje
+        }
 
-            output = io.BytesIO()
-            doc.save(output)
-            st.session_state.conteudo_arquivo = output.getvalue()
-            st.success(f"✅ Contrato processado com sucesso! Data: {data_hoje}")
-        except Exception as e:
-            st.error(f"Erro: {e}")
+        for tabela in doc.tables:
+            for linha in tabela.rows:
+                for celula in linha.cells:
+                    for tag, info in trocas.items():
+                        if tag in celula.text:
+                            celula.text = celula.text.replace(tag, info)
 
-if st.session_state.conteudo_arquivo:
-    st.download_button("📥 BAIXAR CONTRATO AGORA", st.session_state.conteudo_arquivo, f"Contrato_{razao}.docx")
+        output = io.BytesIO()
+        doc.save(output)
+        st.session_state.arquivo_pronto = output.getvalue()
+        st.success(f"✅ Contrato de {razao} pronto para baixar!")
+    except Exception as e:
+        st.error(f"Erro: {e}")
+
+if st.session_state.arquivo_pronto:
+    st.download_button("📥 BAIXAR CONTRATO AGORA", st.session_state.arquivo_pronto, f"Contrato_{razao}.docx")
